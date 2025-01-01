@@ -1,21 +1,32 @@
-import React, { useEffect, useState } from 'react';
+import React, { useState } from 'react';
 import { useWebgazer } from '../../hooks/useWebgazer';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { MessageDisplay } from './MessageDisplay';
-import { Camera } from 'lucide-react';
-import { useGazeTracking } from '../../hooks/useGazeTracking';
+import { CalibrationScreen } from './CalibrationScreen';
+import { useFacialGestures } from '../../hooks/useFacialGestures';
+import { PermissionsRequest } from '../PermissionsRequest';
 
 export const EyeMovementControl: React.FC = () => {
   const [message, setMessage] = useState('');
   const [isCalibrating, setIsCalibrating] = useState(true);
-  const { isReady, calibrate } = useWebgazer();
-  const { gazedLetter } = useGazeTracking();
+  const [hasPermissions, setHasPermissions] = useState(false);
+  const { startTracking } = useWebgazer();
+  const { currentGesture } = useFacialGestures();
 
-  useEffect(() => {
-    if (gazedLetter) {
-      setMessage(prev => prev + gazedLetter);
+  const handlePermissionsGranted = () => {
+    setHasPermissions(true);
+  };
+
+  const handleCalibrationComplete = async () => {
+    await startTracking();
+    setIsCalibrating(false);
+  };
+
+  const handleLetterSelect = (letter: string) => {
+    if (currentGesture === 'blink') {
+      setMessage(prev => prev + letter);
     }
-  }, [gazedLetter]);
+  };
 
   const handleSpeak = () => {
     if (message) {
@@ -24,30 +35,30 @@ export const EyeMovementControl: React.FC = () => {
     }
   };
 
+  if (!hasPermissions) {
+    return <PermissionsRequest onPermissionsGranted={handlePermissionsGranted} />;
+  }
+
   return (
     <div className="max-w-4xl mx-auto p-4">
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h1 className="text-2xl font-bold mb-4">Eye Movement Control</h1>
         
         {isCalibrating ? (
-          <div className="text-center p-8">
-            <Camera className="h-12 w-12 text-blue-600 mx-auto mb-4" />
-            <h2 className="text-xl font-semibold mb-4">Camera Calibration</h2>
-            <p className="mb-4">Look at each corner of the screen and blink to calibrate</p>
-            <button
-              onClick={async () => {
-                await calibrate();
-                setIsCalibrating(false);
-              }}
-              className="px-6 py-3 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
-            >
-              Start Calibration
-            </button>
-          </div>
+          <CalibrationScreen onComplete={handleCalibrationComplete} />
         ) : (
           <>
             <MessageDisplay message={message} onSpeak={handleSpeak} />
-            <VirtualKeyboard onLetterSelect={() => {}} />
+            <VirtualKeyboard onLetterSelect={handleLetterSelect} />
+            
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+              <h3 className="font-medium mb-2">Gesture Guide:</h3>
+              <ul className="space-y-2">
+                <li>• Blink: Select letter</li>
+                <li>• Smile: Delete last letter</li>
+                <li>• Open mouth: Speak message</li>
+              </ul>
+            </div>
           </>
         )}
       </div>
