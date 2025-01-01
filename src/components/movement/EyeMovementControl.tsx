@@ -1,10 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useWebgazer } from '../../hooks/useWebgazer';
 import { VirtualKeyboard } from './VirtualKeyboard';
 import { MessageDisplay } from './MessageDisplay';
 import { CalibrationScreen } from './CalibrationScreen';
 import { useFacialGestures } from '../../hooks/useFacialGestures';
 import { PermissionsRequest } from '../PermissionsRequest';
+import { useCamera } from '../../hooks/useCamera';
+import { useEyeTracking } from '../../hooks/useEyeTracking';
 
 export const EyeMovementControl: React.FC = () => {
   const [message, setMessage] = useState('');
@@ -12,9 +14,13 @@ export const EyeMovementControl: React.FC = () => {
   const [hasPermissions, setHasPermissions] = useState(false);
   const { startTracking } = useWebgazer();
   const { currentGesture } = useFacialGestures();
+  const { videoRef, startCamera } = useCamera();
+  const { isTracking, startTracking: startEyeTracking } = useEyeTracking(videoRef);
 
-  const handlePermissionsGranted = () => {
+  const handlePermissionsGranted = async () => {
     setHasPermissions(true);
+    await startCamera();
+    await startEyeTracking();
   };
 
   const handleCalibrationComplete = async () => {
@@ -44,6 +50,21 @@ export const EyeMovementControl: React.FC = () => {
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
         <h1 className="text-2xl font-bold mb-4">Eye Movement Control</h1>
         
+        <div className="relative aspect-video mb-6 bg-gray-100 rounded-lg overflow-hidden">
+          <video
+            ref={videoRef}
+            autoPlay
+            playsInline
+            muted
+            className="w-full h-full object-cover"
+          />
+          {isTracking && (
+            <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm">
+              Tracking Active
+            </div>
+          )}
+        </div>
+
         {isCalibrating ? (
           <CalibrationScreen onComplete={handleCalibrationComplete} />
         ) : (
