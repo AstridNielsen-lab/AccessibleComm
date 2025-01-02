@@ -1,17 +1,26 @@
-import React, { useState } from 'react';
+import React, { useEffect } from 'react';
 import { Eye } from 'lucide-react';
-import { CalibrationScreen } from './CalibrationScreen';
 import { VideoFeed } from './VideoFeed';
 import { usePermissions } from '../../hooks/usePermissions';
 import { PermissionsRequest } from '../PermissionsRequest';
+import { useCamera } from '../../hooks/useCamera';
+import { useEyeTracking } from '../../hooks/useEyeTracking';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
 
 export const EyeTrackingWindow: React.FC = () => {
-  const [isCalibrated, setIsCalibrated] = useState(false);
   const { hasPermissions, requestPermissions } = usePermissions();
+  const { videoRef, startCamera } = useCamera();
+  const { isTracking, isLoading, error, startTracking } = useEyeTracking(videoRef);
 
-  const handleCalibrationComplete = () => {
-    setIsCalibrated(true);
-  };
+  useEffect(() => {
+    if (hasPermissions) {
+      const initCamera = async () => {
+        await startCamera();
+        await startTracking();
+      };
+      initCamera();
+    }
+  }, [hasPermissions, startCamera, startTracking]);
 
   if (!hasPermissions) {
     return (
@@ -33,11 +42,20 @@ export const EyeTrackingWindow: React.FC = () => {
       </h2>
       
       <div className="space-y-4">
-        {!isCalibrated ? (
-          <CalibrationScreen onComplete={handleCalibrationComplete} />
-        ) : (
-          <VideoFeed />
+        {isLoading && (
+          <div className="absolute inset-0 flex items-center justify-center bg-white/80">
+            <LoadingSpinner />
+          </div>
         )}
+        {error && (
+          <div className="p-4 bg-red-50 text-red-600 rounded-lg">
+            {error}
+          </div>
+        )}
+        <VideoFeed 
+          videoRef={videoRef}
+          isTracking={isTracking}
+        />
       </div>
     </div>
   );

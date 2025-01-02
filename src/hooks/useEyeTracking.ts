@@ -1,22 +1,17 @@
-import { useState, useEffect } from 'react';
-import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
+import { useState, useEffect, useCallback } from 'react';
+import { useModelLoader } from './useModelLoader';
 
 export const useEyeTracking = (videoRef: React.RefObject<HTMLVideoElement>) => {
   const [isTracking, setIsTracking] = useState(false);
-  const [detector, setDetector] = useState<any>(null);
+  const { model, loadModel, isLoading, error } = useModelLoader();
 
-  const startTracking = async () => {
+  const startTracking = useCallback(async () => {
     if (!videoRef.current) return;
 
     try {
-      const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-      const detector = await faceLandmarksDetection.createDetector(model, {
-        runtime: 'tfjs',
-        refineLandmarks: true,
-        maxFaces: 1
-      });
+      const detector = await loadModel();
+      if (!detector) return;
 
-      setDetector(detector);
       setIsTracking(true);
 
       const detect = async () => {
@@ -25,40 +20,42 @@ export const useEyeTracking = (videoRef: React.RefObject<HTMLVideoElement>) => {
         try {
           const predictions = await detector.estimateFaces(videoRef.current);
           if (predictions.length > 0) {
-            // Process eye tracking data
             const eyeData = predictions[0].keypoints.filter((kp: any) => 
               kp.name && (kp.name.includes('leftEye') || kp.name.includes('rightEye'))
             );
-            // You can process eye data here
+            // Process eye data here
           }
           if (isTracking) {
             requestAnimationFrame(detect);
           }
         } catch (error) {
-          console.error('Detection error:', error);
+          if (isTracking) {
+            requestAnimationFrame(detect);
+          }
         }
       };
 
       detect();
     } catch (error) {
-      console.error('Initialization error:', error);
+      console.error('Failed to start eye tracking:', error);
       setIsTracking(false);
     }
-  };
+  }, [videoRef, isTracking, loadModel]);
 
-  const stopTracking = () => {
+  const stopTracking = useCallback(() => {
     setIsTracking(false);
-    setDetector(null);
-  };
+  }, []);
 
   useEffect(() => {
     return () => {
       stopTracking();
     };
-  }, []);
+  }, [stopTracking]);
 
   return {
     isTracking,
+    isLoading,
+    error,
     startTracking,
     stopTracking
   };

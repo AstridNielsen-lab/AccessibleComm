@@ -1,30 +1,29 @@
-import React, { useRef, useEffect } from 'react';
-import { useCamera } from '../../hooks/useCamera';
-import { useEyeTracking } from '../../hooks/useEyeTracking';
+import React, { useEffect } from 'react';
 
-export const VideoFeed: React.FC = () => {
-  const { videoRef, startCamera, stream } = useCamera();
-  const { isTracking, startTracking } = useEyeTracking(videoRef);
+interface VideoFeedProps {
+  videoRef: React.RefObject<HTMLVideoElement>;
+  isTracking: boolean;
+}
 
+export const VideoFeed: React.FC<VideoFeedProps> = ({ videoRef, isTracking }) => {
+  // Ensure video fills container while maintaining aspect ratio
   useEffect(() => {
-    const initializeVideo = async () => {
-      await startCamera();
-      // Only start tracking if we have a video stream
-      if (stream) {
-        await startTracking();
-      }
-    };
-    initializeVideo();
-  }, [stream]);
+    const video = videoRef.current;
+    if (video) {
+      video.style.objectFit = 'cover';
+      video.style.width = '100%';
+      video.style.height = '100%';
+    }
+  }, [videoRef]);
 
   return (
-    <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">
+    <div className="relative aspect-video mb-6 bg-gray-100 rounded-lg overflow-hidden">
       <video
         ref={videoRef}
-        className="w-full h-full object-cover"
         autoPlay
         playsInline
         muted
+        className="absolute inset-0 w-full h-full object-cover"
       />
       {isTracking && (
         <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm">
