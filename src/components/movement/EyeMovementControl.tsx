@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { VideoFeed } from './VideoFeed';
 import { VirtualKeyboard } from './VirtualKeyboard';
+import { TouchKeyboard } from './keyboard/TouchKeyboard';
 import { MessageDisplay } from './message/MessageDisplay';
 import { EyeCursor } from './EyeCursor';
 import { PermissionsRequest } from '../shared/PermissionsRequest';
@@ -30,7 +31,11 @@ export const EyeMovementControl: React.FC = () => {
   };
 
   const handleLetterSelect = (letter: string) => {
-    setMessage(prev => prev + letter);
+    if (letter === 'BACKSPACE') {
+      setMessage(prev => prev.slice(0, -1));
+    } else {
+      setMessage(prev => prev + letter);
+    }
   };
 
   const handleSpeak = () => {
@@ -94,13 +99,14 @@ export const EyeMovementControl: React.FC = () => {
           />
         )}
 
+        <TouchKeyboard onKeyPress={handleLetterSelect} />
+
         <div className="mt-4 p-4 bg-gray-50 rounded-lg">
           <h3 className="font-medium mb-2">How to use:</h3>
           <ul className="space-y-2">
-            <li>• Click "Show Keyboard" to display the virtual keyboard</li>
-            <li>• Look at the letter you want to select</li>
-            <li>• Keep your gaze on the letter for 1 second to select it</li>
-            <li>• The letter will be added to your message</li>
+            <li>• Use the touch keyboard below to type directly</li>
+            <li>• Click "Show Keyboard" to use eye tracking keyboard</li>
+            <li>• Look at letters to select them with eye tracking</li>
             <li>• Click "Speak Message" to hear your message spoken</li>
           </ul>
         </div>
