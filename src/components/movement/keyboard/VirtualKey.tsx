@@ -2,16 +2,40 @@ import React from 'react';
 
 interface VirtualKeyProps {
   letter: string;
+  isHovered: boolean;
+  dwellTimeStart: number | null;
+  dwellTime: number;
   onSelect: (letter: string) => void;
 }
 
-export const VirtualKey: React.FC<VirtualKeyProps> = ({ letter, onSelect }) => {
+export const VirtualKey: React.FC<VirtualKeyProps> = ({
+  letter,
+  isHovered,
+  dwellTimeStart,
+  dwellTime,
+  onSelect
+}) => {
+  const progress = dwellTimeStart
+    ? Math.min(((Date.now() - dwellTimeStart) / dwellTime) * 100, 100)
+    : 0;
+
   return (
     <button
+      data-key={letter}
       onClick={() => onSelect(letter)}
-      className="w-16 h-16 text-2xl font-bold bg-white border-2 border-blue-200 rounded-lg hover:bg-blue-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      className="relative w-16 h-16 text-2xl font-bold rounded-lg overflow-hidden focus:outline-none"
     >
-      {letter}
+      <div className="absolute inset-0 bg-white border-2 border-blue-200" />
+      {isHovered && (
+        <div
+          className="absolute bottom-0 left-0 bg-blue-500/20 transition-all"
+          style={{
+            width: '100%',
+            height: `${progress}%`,
+          }}
+        />
+      )}
+      <span className="relative z-10">{letter}</span>
     </button>
   );
 };

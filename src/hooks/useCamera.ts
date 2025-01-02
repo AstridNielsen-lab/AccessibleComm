@@ -1,21 +1,21 @@
 import { useState, useEffect, useRef } from 'react';
+import { CameraError } from '../types/camera';
 
 export const useCamera = () => {
   const videoRef = useRef<HTMLVideoElement | null>(null);
-  const [stream, setStream] = useState<MediaStream | null>(null);
-  const [error, setError] = useState<string | null>(null);
   const streamRef = useRef<MediaStream | null>(null);
+  const [error, setError] = useState<CameraError | null>(null);
+  const isInitializingRef = useRef(false);
 
   const startCamera = async () => {
-    try {
-      if (streamRef.current) {
-        if (videoRef.current) {
-          videoRef.current.srcObject = streamRef.current;
-          await videoRef.current.play();
-        }
-        return;
-      }
+    if (isInitializingRef.current || streamRef.current) {
+      return;
+    }
 
+    isInitializingRef.current = true;
+    setError(null);
+
+    try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
         video: { 
           facingMode: 'user',
@@ -25,19 +25,31 @@ export const useCamera = () => {
       });
       
       streamRef.current = mediaStream;
-      setStream(mediaStream);
       
       if (videoRef.current) {
         videoRef.current.srcObject = mediaStream;
-        try {
+        
+        // Wait for video metadata to load before playing
+        await new Promise((resolve) => {
+          if (!videoRef.current) return;
+          videoRef.current.onloadedmetadata = resolve;
+        });
+
+        // Ensure video element still exists before playing
+        if (videoRef.current) {
           await videoRef.current.play();
-        } catch (playError) {
-          console.warn('Auto-play failed, waiting for user interaction');
         }
       }
     } catch (err) {
-      setError('Failed to start camera');
-      console.error('Camera error:', err);
+      const error = err as Error;
+      setError({
+        type: 'camera_error',
+        message: error.message,
+        details: error
+      });
+      console.error('Camera error:', error);
+    } finally {
+      isInitializingRef.current = false;
     }
   };
 
@@ -45,7 +57,6 @@ export const useCamera = () => {
     if (streamRef.current) {
       streamRef.current.getTracks().forEach(track => track.stop());
       streamRef.current = null;
-      setStream(null);
     }
     if (videoRef.current) {
       videoRef.current.srcObject = null;
@@ -60,9 +71,9 @@ export const useCamera = () => {
 
   return {
     videoRef,
-    stream,
     error,
     startCamera,
-    stopCamera
+    stopCamera,
+    isInitializing: isInitializingRef.current
   };
 };

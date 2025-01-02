@@ -1,29 +1,36 @@
 import React, { useState } from 'react';
 import { VideoFeed } from './VideoFeed';
-import { VirtualKeyboard } from './keyboard/VirtualKeyboard';
+import { VirtualKeyboard } from './VirtualKeyboard';
 import { MessageDisplay } from './message/MessageDisplay';
+import { EyeCursor } from './EyeCursor';
 import { PermissionsRequest } from '../shared/PermissionsRequest';
+import { LoadingSpinner } from '../shared/LoadingSpinner';
+import { AlertCircle, Keyboard } from 'lucide-react';
 import { useCamera } from '../../hooks/useCamera';
 import { useEyeTracking } from '../../hooks/useEyeTracking';
-import { useFacialGestures } from '../../hooks/useFacialGestures';
 
 export const EyeMovementControl: React.FC = () => {
   const [message, setMessage] = useState('');
   const [hasPermissions, setHasPermissions] = useState(false);
-  const { videoRef, startCamera } = useCamera();
-  const { isTracking, startTracking: startEyeTracking } = useEyeTracking(videoRef);
-  const { currentGesture } = useFacialGestures();
+  const [showKeyboard, setShowKeyboard] = useState(false);
+  const { videoRef, startCamera, error: cameraError } = useCamera();
+  const { 
+    isTracking, 
+    isModelLoading, 
+    error: modelError,
+    cursorPosition, 
+    startTracking,
+    stopTracking
+  } = useEyeTracking(videoRef);
 
   const handlePermissionsGranted = async () => {
     setHasPermissions(true);
     await startCamera();
-    await startEyeTracking();
+    await startTracking();
   };
 
   const handleLetterSelect = (letter: string) => {
-    if (currentGesture === 'blink') {
-      setMessage(prev => prev + letter);
-    }
+    setMessage(prev => prev + letter);
   };
 
   const handleSpeak = () => {
@@ -33,6 +40,10 @@ export const EyeMovementControl: React.FC = () => {
     }
   };
 
+  const toggleKeyboard = () => {
+    setShowKeyboard(!showKeyboard);
+  };
+
   if (!hasPermissions) {
     return <PermissionsRequest onPermissionsGranted={handlePermissionsGranted} />;
   }
@@ -40,11 +51,35 @@ export const EyeMovementControl: React.FC = () => {
   return (
     <div className="max-w-4xl mx-auto p-4">
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-4">Eye Movement Control</h1>
+        <div className="flex justify-between items-center mb-4">
+          <h1 className="text-2xl font-bold">Eye Movement Control</h1>
+          <button
+            onClick={toggleKeyboard}
+            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700"
+          >
+            <Keyboard className="w-5 h-5" />
+            {showKeyboard ? 'Hide Keyboard' : 'Show Keyboard'}
+          </button>
+        </div>
+        
+        {isModelLoading && (
+          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
+            <LoadingSpinner />
+            <span className="ml-2">Loading eye tracking model...</span>
+          </div>
+        )}
+
+        {modelError && (
+          <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
+            <AlertCircle className="w-5 h-5" />
+            <span>{modelError}</span>
+          </div>
+        )}
         
         <VideoFeed 
           videoRef={videoRef} 
-          isTracking={isTracking} 
+          isTracking={isTracking}
+          error={cameraError}
         />
 
         <MessageDisplay 
@@ -52,12 +87,26 @@ export const EyeMovementControl: React.FC = () => {
           onSpeak={handleSpeak} 
         />
         
-        <VirtualKeyboard 
-          onLetterSelect={handleLetterSelect} 
-        />
-        
-        <GestureGuide />
+        {showKeyboard && (
+          <VirtualKeyboard 
+            cursorPosition={cursorPosition}
+            onLetterSelect={handleLetterSelect} 
+          />
+        )}
+
+        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+          <h3 className="font-medium mb-2">How to use:</h3>
+          <ul className="space-y-2">
+            <li>• Click "Show Keyboard" to display the virtual keyboard</li>
+            <li>• Look at the letter you want to select</li>
+            <li>• Keep your gaze on the letter for 1 second to select it</li>
+            <li>• The letter will be added to your message</li>
+            <li>• Click "Speak Message" to hear your message spoken</li>
+          </ul>
+        </div>
       </div>
+
+      {isTracking && showKeyboard && <EyeCursor position={cursorPosition} />}
     </div>
   );
 };
