@@ -3,16 +3,19 @@ import { useCamera } from '../../hooks/useCamera';
 import { useEyeTracking } from '../../hooks/useEyeTracking';
 
 export const VideoFeed: React.FC = () => {
-  const { videoRef, startCamera } = useCamera();
+  const { videoRef, startCamera, stream } = useCamera();
   const { isTracking, startTracking } = useEyeTracking(videoRef);
 
   useEffect(() => {
     const initializeVideo = async () => {
       await startCamera();
-      await startTracking();
+      // Only start tracking if we have a video stream
+      if (stream) {
+        await startTracking();
+      }
     };
     initializeVideo();
-  }, []);
+  }, [stream]);
 
   return (
     <div className="relative aspect-video bg-gray-100 rounded-lg overflow-hidden">

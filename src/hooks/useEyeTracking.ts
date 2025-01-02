@@ -3,8 +3,8 @@ import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detec
 
 export const useEyeTracking = (videoRef: React.RefObject<HTMLVideoElement>) => {
   const [isTracking, setIsTracking] = useState(false);
-  const [eyePositions, setEyePositions] = useState<any>(null);
-  
+  const [detector, setDetector] = useState<any>(null);
+
   const startTracking = async () => {
     if (!videoRef.current) return;
 
@@ -13,35 +13,42 @@ export const useEyeTracking = (videoRef: React.RefObject<HTMLVideoElement>) => {
       const detector = await faceLandmarksDetection.createDetector(model, {
         runtime: 'tfjs',
         refineLandmarks: true,
+        maxFaces: 1
       });
 
+      setDetector(detector);
       setIsTracking(true);
 
       const detect = async () => {
         if (!videoRef.current || !isTracking) return;
 
-        const faces = await detector.estimateFaces(videoRef.current);
-        if (faces.length > 0) {
-          const face = faces[0];
-          setEyePositions({
-            leftEye: face.keypoints.filter((kp: any) => kp.name?.includes('leftEye')),
-            rightEye: face.keypoints.filter((kp: any) => kp.name?.includes('rightEye'))
-          });
-        }
-
-        if (isTracking) {
-          requestAnimationFrame(detect);
+        try {
+          const predictions = await detector.estimateFaces(videoRef.current);
+          if (predictions.length > 0) {
+            // Process eye tracking data
+            const eyeData = predictions[0].keypoints.filter((kp: any) => 
+              kp.name && (kp.name.includes('leftEye') || kp.name.includes('rightEye'))
+            );
+            // You can process eye data here
+          }
+          if (isTracking) {
+            requestAnimationFrame(detect);
+          }
+        } catch (error) {
+          console.error('Detection error:', error);
         }
       };
 
       detect();
     } catch (error) {
-      console.error('Error starting eye tracking:', error);
+      console.error('Initialization error:', error);
+      setIsTracking(false);
     }
   };
 
   const stopTracking = () => {
     setIsTracking(false);
+    setDetector(null);
   };
 
   useEffect(() => {
@@ -52,7 +59,6 @@ export const useEyeTracking = (videoRef: React.RefObject<HTMLVideoElement>) => {
 
   return {
     isTracking,
-    eyePositions,
     startTracking,
     stopTracking
   };
