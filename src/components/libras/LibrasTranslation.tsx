@@ -4,13 +4,15 @@ import { MessageCircle, Volume2 } from 'lucide-react';
 import { GeminiChat } from '../Chat/GeminiChat';
 import { usePermissions } from '../../hooks/usePermissions';
 import { SignRecorder } from './SignRecorder';
+import { VisionAnalysis } from './VisionAnalysis';
+import { useCamera } from '../../hooks/useCamera';
 
 export const LibrasTranslation: React.FC = () => {
-  const videoRef = useRef<HTMLVideoElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [translation, setTranslation] = useState('');
   const { startDetection, stopDetection } = useFaceLandmarks();
   const { hasPermissions, requestPermissions } = usePermissions();
+  const { videoRef, startCamera, stopCamera, error: cameraError } = useCamera();
 
   useEffect(() => {
     const initializeCamera = async () => {
@@ -18,40 +20,32 @@ export const LibrasTranslation: React.FC = () => {
         if (!hasPermissions) {
           await requestPermissions();
         }
-        
-        const stream = await navigator.mediaDevices.getUserMedia({
-          video: {
-            width: { ideal: 1280 },
-            height: { ideal: 720 },
-            facingMode: 'user'
-          }
-        });
-        
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-        }
+        await startCamera();
       } catch (error) {
-        console.error('Error accessing camera:', error);
+        console.error('Error initializing camera:', error);
       }
     };
 
     initializeCamera();
 
     return () => {
-      if (videoRef.current?.srcObject) {
-        const stream = videoRef.current.srcObject as MediaStream;
-        stream.getTracks().forEach(track => track.stop());
+      stopCamera();
+      if (isRecording) {
+        stopDetection();
+        setIsRecording(false);
       }
     };
-  }, [hasPermissions, requestPermissions]);
+  }, [hasPermissions, requestPermissions, startCamera, stopCamera, isRecording, stopDetection]);
 
   const toggleRecording = async () => {
     if (isRecording) {
       stopDetection();
       setIsRecording(false);
     } else {
-      await startDetection(videoRef.current!);
-      setIsRecording(true);
+      if (videoRef.current) {
+        await startDetection(videoRef.current);
+        setIsRecording(true);
+      }
     }
   };
 
@@ -60,6 +54,10 @@ export const LibrasTranslation: React.FC = () => {
       const speech = new SpeechSynthesisUtterance(translation);
       window.speechSynthesis.speak(speech);
     }
+  };
+
+  const handleVisionAnalysis = (result: string) => {
+    setTranslation(result);
   };
 
   return (
@@ -81,16 +79,29 @@ export const LibrasTranslation: React.FC = () => {
                 Recording
               </div>
             )}
+            {cameraError && (
+              <div className="absolute inset-0 flex items-center justify-center bg-black/50">
+                <div className="bg-white p-4 rounded-lg text-red-600">
+                  {cameraError.message}
+                </div>
+              </div>
+            )}
           </div>
+          
+          <VisionAnalysis 
+            videoRef={videoRef}
+            onAnalysis={handleVisionAnalysis}
+          />
           
           <SignRecorder videoRef={videoRef} />
           
           <div className="space-y-4">
             <button
               onClick={toggleRecording}
+              disabled={!videoRef.current}
               className={`w-full py-3 px-4 rounded-lg text-white font-medium ${
                 isRecording ? 'bg-red-600 hover:bg-red-700' : 'bg-blue-600 hover:bg-blue-700'
-              }`}
+              } disabled:opacity-50 disabled:cursor-not-allowed`}
             >
               {isRecording ? 'Stop Recording' : 'Start Recording'}
             </button>
@@ -98,16 +109,16 @@ export const LibrasTranslation: React.FC = () => {
             <div className="bg-gray-50 p-4 rounded-lg">
               <h2 className="text-lg font-semibold mb-2 flex items-center gap-2">
                 <MessageCircle size={20} />
-                Translation
+                Analysis Result
               </h2>
-              <p className="text-xl mb-4">{translation || 'Translation will appear here...'}</p>
+              <p className="text-xl mb-4">{translation || 'Ask a question about what you see...'}</p>
               <button
                 onClick={speakTranslation}
                 disabled={!translation}
                 className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
               >
                 <Volume2 size={20} />
-                Speak Translation
+                Speak Result
               </button>
             </div>
           </div>

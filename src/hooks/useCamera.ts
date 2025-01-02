@@ -7,10 +7,25 @@ export const useCamera = () => {
   const [error, setError] = useState<CameraError | null>(null);
   const isInitializingRef = useRef(false);
 
+  const stopCamera = () => {
+    if (streamRef.current) {
+      streamRef.current.getTracks().forEach(track => {
+        track.stop();
+      });
+      streamRef.current = null;
+    }
+    if (videoRef.current) {
+      videoRef.current.srcObject = null;
+    }
+  };
+
   const startCamera = async () => {
     if (isInitializingRef.current || streamRef.current) {
       return;
     }
+
+    // Stop any existing streams first
+    stopCamera();
 
     isInitializingRef.current = true;
     setError(null);
@@ -50,16 +65,6 @@ export const useCamera = () => {
       console.error('Camera error:', error);
     } finally {
       isInitializingRef.current = false;
-    }
-  };
-
-  const stopCamera = () => {
-    if (streamRef.current) {
-      streamRef.current.getTracks().forEach(track => track.stop());
-      streamRef.current = null;
-    }
-    if (videoRef.current) {
-      videoRef.current.srcObject = null;
     }
   };
 
