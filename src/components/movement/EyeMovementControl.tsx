@@ -12,7 +12,7 @@ export const EyeMovementControl: React.FC = () => {
   const [message, setMessage] = useState('');
   const [isCalibrating, setIsCalibrating] = useState(true);
   const [hasPermissions, setHasPermissions] = useState(false);
-  const { isReady, startTracking } = useWebgazer();
+  const { startTracking } = useWebgazer();
   const { currentGesture } = useFacialGestures();
   const { videoRef, startCamera } = useCamera();
   const { isTracking, startTracking: startEyeTracking } = useEyeTracking(videoRef);
@@ -20,16 +20,11 @@ export const EyeMovementControl: React.FC = () => {
   const handlePermissionsGranted = async () => {
     setHasPermissions(true);
     await startCamera();
-    // Wait for video to be ready before starting eye tracking
-    videoRef.current?.addEventListener('loadeddata', () => {
-      startEyeTracking();
-    });
+    await startEyeTracking();
   };
 
   const handleCalibrationComplete = async () => {
-    if (!isReady) {
-      await startTracking();
-    }
+    await startTracking();
     setIsCalibrating(false);
   };
 
@@ -45,15 +40,6 @@ export const EyeMovementControl: React.FC = () => {
       window.speechSynthesis.speak(speech);
     }
   };
-
-  useEffect(() => {
-    return () => {
-      // Cleanup video element
-      if (videoRef.current) {
-        videoRef.current.srcObject = null;
-      }
-    };
-  }, []);
 
   if (!hasPermissions) {
     return <PermissionsRequest onPermissionsGranted={handlePermissionsGranted} />;
