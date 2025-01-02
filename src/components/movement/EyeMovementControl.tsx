@@ -46,33 +46,31 @@ export const EyeMovementControl: React.FC = () => {
   }
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      <div className="bg-white rounded-lg shadow-lg p-6 mb-6">
-        <h1 className="text-2xl font-bold mb-4">Eye Movement Control</h1>
-        
-        <div className="relative aspect-video mb-6 bg-gray-100 rounded-lg overflow-hidden">
-          <video
-            ref={videoRef}
-            autoPlay
-            playsInline
-            muted
-            className="w-full h-full object-cover"
-          />
-          {isTracking && (
-            <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm">
-              Tracking Active
+    <div className="max-w-7xl mx-auto p-4">
+      <h1 className="text-2xl font-bold mb-4">Eye Movement Control</h1>
+      
+      <div className="grid grid-cols-2 gap-6">
+        {/* Left column: Video feed and message controls */}
+        <div className="space-y-6">
+          <div className="bg-white rounded-lg shadow-lg p-6">
+            <div className="relative aspect-video mb-6 bg-gray-100 rounded-lg overflow-hidden">
+              <video
+                ref={videoRef}
+                autoPlay
+                playsInline
+                muted
+                className="w-full h-full object-cover"
+              />
+              {isTracking && (
+                <div className="absolute top-4 right-4 bg-green-500 text-white px-3 py-1 rounded-full text-sm">
+                  Tracking Active
+                </div>
+              )}
             </div>
-          )}
-        </div>
 
-        {isCalibrating ? (
-          <CalibrationScreen onComplete={handleCalibrationComplete} />
-        ) : (
-          <>
             <MessageDisplay message={message} onSpeak={handleSpeak} />
-            <VirtualKeyboard onLetterSelect={handleLetterSelect} />
             
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+            <div className="p-4 bg-gray-50 rounded-lg">
               <h3 className="font-medium mb-2">Gesture Guide:</h3>
               <ul className="space-y-2">
                 <li>• Blink: Select letter</li>
@@ -80,8 +78,17 @@ export const EyeMovementControl: React.FC = () => {
                 <li>• Open mouth: Speak message</li>
               </ul>
             </div>
-          </>
-        )}
+          </div>
+        </div>
+
+        {/* Right column: Calibration or keyboard */}
+        <div className="bg-white rounded-lg shadow-lg p-6">
+          {isCalibrating ? (
+            <CalibrationScreen onComplete={handleCalibrationComplete} />
+          ) : (
+            <VirtualKeyboard onLetterSelect={handleLetterSelect} />
+          )}
+        </div>
       </div>
     </div>
   );
