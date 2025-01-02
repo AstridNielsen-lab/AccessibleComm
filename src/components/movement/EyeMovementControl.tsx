@@ -98,18 +98,21 @@ export const EyeMovementControl: React.FC = () => {
           error={cameraError}
         />
 
-        <div className="grid grid-cols-2 gap-4 mb-6">
-          <LanguageSelect
-            languages={languages}
-            selectedLanguage={selectedLanguage}
-            onLanguageChange={setSelectedLanguage}
-          />
-          <VoiceSelect
-            voices={voices}
-            selectedVoice={selectedVoice}
-            selectedLanguage={selectedLanguage}
-            onVoiceChange={setSelectedVoice}
-          />
+        <div className="bg-gray-50 p-4 rounded-lg mb-6">
+          <h3 className="text-lg font-semibold mb-4">Voice Settings</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            <LanguageSelect
+              languages={languages}
+              selectedLanguage={selectedLanguage}
+              onLanguageChange={setSelectedLanguage}
+            />
+            <VoiceSelect
+              voices={voices}
+              selectedVoice={selectedVoice}
+              selectedLanguage={selectedLanguage}
+              onVoiceChange={setSelectedVoice}
+            />
+          </div>
         </div>
 
         <MessageDisplay 
@@ -124,11 +127,14 @@ export const EyeMovementControl: React.FC = () => {
           />
         )}
 
-        <TouchKeyboard onKeyPress={handleLetterSelect} />
+        <div className="mt-6">
+          <h3 className="text-lg font-semibold mb-4">Touch Keyboard</h3>
+          <TouchKeyboard onKeyPress={handleLetterSelect} />
+        </div>
 
-        <div className="mt-4 p-4 bg-gray-50 rounded-lg">
+        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
           <h3 className="font-medium mb-2">How to use:</h3>
-          <ul className="space-y-2">
+          <ul className="space-y-2 text-gray-600">
             <li>• Select your preferred language and voice above</li>
             <li>• Use the touch keyboard below to type directly</li>
             <li>• Click "Show Keyboard" to use eye tracking keyboard</li>
