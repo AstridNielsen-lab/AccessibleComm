@@ -1,70 +1,83 @@
 import * as tf from '@tensorflow/tfjs';
 import * as faceLandmarksDetection from '@tensorflow-models/face-landmarks-detection';
+import { SignGesture } from '../types';
 
-export type SignGesture = 
-  | 'HAND_UP' 
-  | 'HAND_DOWN' 
-  | 'HAND_WAVE' 
-  | 'HAND_POINT' 
-  | 'SELF' 
-  | 'OTHER' 
-  | 'SMILE';
+let detector: any = null;
 
-export const detectSign = async (video: HTMLVideoElement): Promise<SignGesture | null> => {
+export const detectSign = async (
+  video: HTMLVideoElement,
+  onUpdatePoints?: (predictions: any[]) => void
+): Promise<SignGesture | null> => {
   try {
-    // Initialize the face landmarks model
-    const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
-    const detector = await faceLandmarksDetection.createDetector(model, {
-      runtime: 'tfjs',
-      refineLandmarks: true,
-    });
+    if (!detector) {
+      const model = faceLandmarksDetection.SupportedModels.MediaPipeFaceMesh;
+      detector = await faceLandmarksDetection.createDetector(model, {
+        runtime: 'tfjs',
+        refineLandmarks: true,
+        maxFaces: 1
+      });
+    }
 
-    // Detect face landmarks
-    const faces = await detector.estimateFaces(video);
-    
-    if (faces.length === 0) return null;
+    const predictions = await detector.estimateFaces(video);
+    if (onUpdatePoints) {
+      onUpdatePoints(predictions);
+    }
 
-    const face = faces[0];
-    const landmarks = face.keypoints;
+    if (!predictions.length) return null;
 
-    // Analyze hand positions and gestures
-    // This is a simplified example - a real implementation would use more sophisticated gesture recognition
-    const rightHand = landmarks.filter(lm => lm.name?.includes('rightHand'));
-    const leftHand = landmarks.filter(lm => lm.name?.includes('leftHand'));
+    const face = predictions[0];
+    const rightWrist = face.keypoints.find((kp: any) => kp.name === 'rightWrist');
+    const leftWrist = face.keypoints.find((kp: any) => kp.name === 'leftWrist');
+    const nose = face.keypoints.find((kp: any) => kp.name === 'noseTip');
 
-    if (rightHand.length === 0 && leftHand.length === 0) return null;
+    if (!rightWrist || !leftWrist || !nose) return null;
 
-    // Simple gesture detection based on hand positions
-    // In a real implementation, this would use more complex pattern recognition
-    const gesture = analyzeHandPositions(rightHand, leftHand);
-    
-    return gesture;
+    // Detect wave gesture (horizontal movement)
+    if (isWavingHand(rightWrist, nose) || isWavingHand(leftWrist, nose)) {
+      return 'HAND_WAVE';
+    }
+
+    // Detect raised hand (hello gesture)
+    if (isRaisedHand(rightWrist, nose) || isRaisedHand(leftWrist, nose)) {
+      return 'HAND_UP';
+    }
+
+    // Detect pointing gesture
+    if (isPointingGesture(rightWrist, nose) || isPointingGesture(leftWrist, nose)) {
+      return 'HAND_POINT';
+    }
+
+    // Detect self-reference gesture (hand near chest)
+    if (isSelfGesture(rightWrist, nose) || isSelfGesture(leftWrist, nose)) {
+      return 'SELF';
+    }
+
+    return null;
   } catch (error) {
-    console.error('Error detecting sign:', error);
+    console.error('Error in sign detection:', error);
     return null;
   }
 };
 
-const analyzeHandPositions = (
-  rightHand: faceLandmarksDetection.Keypoint[], 
-  leftHand: faceLandmarksDetection.Keypoint[]
-): SignGesture | null => {
-  // This is a simplified example of gesture detection
-  // A real implementation would use more sophisticated analysis
-  
-  if (rightHand.length > 0) {
-    const hand = rightHand[0];
-    if (hand.y < 200) return 'HAND_UP';
-    if (hand.y > 400) return 'HAND_DOWN';
-    if (Math.abs(hand.x - 300) < 50) return 'SELF';
-    if (hand.x > 400) return 'OTHER';
-  }
+// Gesture detection helper functions
+const isWavingHand = (wrist: any, nose: any): boolean => {
+  const horizontalDistance = Math.abs(wrist.x - nose.x);
+  const verticalDistance = Math.abs(wrist.y - nose.y);
+  return horizontalDistance > 100 && verticalDistance < 150;
+};
 
-  if (leftHand.length > 0) {
-    const hand = leftHand[0];
-    if (hand.y < 200) return 'HAND_UP';
-    if (hand.y > 400) return 'HAND_DOWN';
-  }
+const isRaisedHand = (wrist: any, nose: any): boolean => {
+  return wrist.y < nose.y - 100;
+};
 
-  return null;
+const isPointingGesture = (wrist: any, nose: any): boolean => {
+  const horizontalDistance = Math.abs(wrist.x - nose.x);
+  return horizontalDistance > 150 && Math.abs(wrist.y - nose.y) < 100;
+};
+
+const isSelfGesture = (wrist: any, nose: any): boolean => {
+  const distance = Math.sqrt(
+    Math.pow(wrist.x - nose.x, 2) + Math.pow(wrist.y - nose.y, 2)
+  );
+  return distance < 100;
 };

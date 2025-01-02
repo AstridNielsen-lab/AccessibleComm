@@ -11,11 +11,15 @@ export const LibrasTranslation: React.FC = () => {
   const [hasPermissions, setHasPermissions] = useState(false);
 
   const handleTranslationUpdate = (newTranslation: string) => {
-    setTranslation(newTranslation);
+    setTranslation(prev => `${prev}${prev ? ' ' : ''}${newTranslation}`);
   };
 
   const handlePermissionsGranted = () => {
     setHasPermissions(true);
+  };
+
+  const handleClearTranslation = () => {
+    setTranslation('');
   };
 
   if (mode === 'live' && !hasPermissions) {
@@ -29,7 +33,10 @@ export const LibrasTranslation: React.FC = () => {
         
         <div className="flex gap-4 mb-6">
           <button
-            onClick={() => setMode('live')}
+            onClick={() => {
+              setMode('live');
+              handleClearTranslation();
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
               mode === 'live' 
                 ? 'bg-blue-600 text-white' 
@@ -40,7 +47,10 @@ export const LibrasTranslation: React.FC = () => {
             Live Detection
           </button>
           <button
-            onClick={() => setMode('upload')}
+            onClick={() => {
+              setMode('upload');
+              handleClearTranslation();
+            }}
             className={`flex items-center gap-2 px-4 py-2 rounded-lg ${
               mode === 'upload' 
                 ? 'bg-blue-600 text-white' 
@@ -61,7 +71,10 @@ export const LibrasTranslation: React.FC = () => {
             )}
           </div>
           
-          <TranslationDisplay translation={translation} />
+          <TranslationDisplay 
+            translation={translation} 
+            onClear={handleClearTranslation}
+          />
         </div>
       </div>
     </div>
