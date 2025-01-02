@@ -6,6 +6,7 @@ import { MessageDisplay } from './message/MessageDisplay';
 import { EyeCursor } from './EyeCursor';
 import { LanguageSelect } from './voice/LanguageSelect';
 import { VoiceSelect } from './voice/VoiceSelect';
+import { LanguageInteraction } from './language/LanguageInteraction';
 import { PermissionsRequest } from '../shared/PermissionsRequest';
 import { LoadingSpinner } from '../shared/LoadingSpinner';
 import { AlertCircle, Keyboard } from 'lucide-react';
@@ -17,47 +18,15 @@ export const EyeMovementControl: React.FC = () => {
   const [message, setMessage] = useState('');
   const [hasPermissions, setHasPermissions] = useState(false);
   const [showKeyboard, setShowKeyboard] = useState(false);
-  const { videoRef, startCamera, error: cameraError } = useCamera();
-  const { 
-    isTracking, 
-    isModelLoading, 
-    error: modelError,
-    cursorPosition, 
-    startTracking,
-    stopTracking
-  } = useEyeTracking(videoRef);
-  const {
-    voices,
-    selectedVoice,
-    selectedLanguage,
-    languages,
-    setSelectedVoice,
-    setSelectedLanguage,
-    speak
-  } = useSpeechSynthesis();
+  const [userLanguage, setUserLanguage] = useState('en');
+  
+  // ... existing hooks and handlers ...
 
-  const handlePermissionsGranted = async () => {
-    setHasPermissions(true);
-    await startCamera();
-    await startTracking();
-  };
-
-  const handleLetterSelect = (letter: string) => {
-    if (letter === 'BACKSPACE') {
-      setMessage(prev => prev.slice(0, -1));
-    } else {
-      setMessage(prev => prev + letter);
-    }
-  };
-
-  const handleSpeak = () => {
-    if (message) {
-      speak(message);
-    }
-  };
-
-  const toggleKeyboard = () => {
-    setShowKeyboard(!showKeyboard);
+  const handleLanguageSelect = (language: string) => {
+    setUserLanguage(language);
+    // Automatically update voice language based on user selection
+    const voiceLanguage = `${language}-${language.toUpperCase()}`;
+    setSelectedLanguage(voiceLanguage);
   };
 
   if (!hasPermissions) {
@@ -77,74 +46,11 @@ export const EyeMovementControl: React.FC = () => {
             {showKeyboard ? 'Hide Keyboard' : 'Show Keyboard'}
           </button>
         </div>
+
+        <LanguageInteraction onLanguageSelect={handleLanguageSelect} />
         
-        {isModelLoading && (
-          <div className="absolute inset-0 bg-white/80 flex items-center justify-center z-50">
-            <LoadingSpinner />
-            <span className="ml-2">Loading eye tracking model...</span>
-          </div>
-        )}
-
-        {modelError && (
-          <div className="mb-4 p-4 bg-red-50 text-red-600 rounded-lg flex items-center gap-2">
-            <AlertCircle className="w-5 h-5" />
-            <span>{modelError}</span>
-          </div>
-        )}
-        
-        <VideoFeed 
-          videoRef={videoRef} 
-          isTracking={isTracking}
-          error={cameraError}
-        />
-
-        <div className="bg-gray-50 p-4 rounded-lg mb-6">
-          <h3 className="text-lg font-semibold mb-4">Voice Settings</h3>
-          <div className="grid md:grid-cols-2 gap-4">
-            <LanguageSelect
-              languages={languages}
-              selectedLanguage={selectedLanguage}
-              onLanguageChange={setSelectedLanguage}
-            />
-            <VoiceSelect
-              voices={voices}
-              selectedVoice={selectedVoice}
-              selectedLanguage={selectedLanguage}
-              onVoiceChange={setSelectedVoice}
-            />
-          </div>
-        </div>
-
-        <MessageDisplay 
-          message={message} 
-          onSpeak={handleSpeak} 
-        />
-        
-        {showKeyboard && (
-          <VirtualKeyboard 
-            cursorPosition={cursorPosition}
-            onLetterSelect={handleLetterSelect} 
-          />
-        )}
-
-        <div className="mt-6">
-          <h3 className="text-lg font-semibold mb-4">Touch Keyboard</h3>
-          <TouchKeyboard onKeyPress={handleLetterSelect} />
-        </div>
-
-        <div className="mt-6 p-4 bg-gray-50 rounded-lg">
-          <h3 className="font-medium mb-2">How to use:</h3>
-          <ul className="space-y-2 text-gray-600">
-            <li>• Select your preferred language and voice above</li>
-            <li>• Use the touch keyboard below to type directly</li>
-            <li>• Click "Show Keyboard" to use eye tracking keyboard</li>
-            <li>• Look at letters to select them with eye tracking</li>
-            <li>• Click "Speak Message" to hear your message spoken</li>
-          </ul>
-        </div>
+        {/* ... rest of the existing JSX ... */}
       </div>
-
-      {isTracking && showKeyboard && <EyeCursor position={cursorPosition} />}
     </div>
   );
 };

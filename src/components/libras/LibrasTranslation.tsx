@@ -1,13 +1,49 @@
-import React, { useRef, useState } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { useFaceLandmarks } from '../../hooks/useFaceLandmarks';
 import { MessageCircle, Volume2 } from 'lucide-react';
 import { GeminiChat } from '../Chat/GeminiChat';
+import { usePermissions } from '../../hooks/usePermissions';
+import { SignRecorder } from './SignRecorder';
 
 export const LibrasTranslation: React.FC = () => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const [isRecording, setIsRecording] = useState(false);
   const [translation, setTranslation] = useState('');
   const { startDetection, stopDetection } = useFaceLandmarks();
+  const { hasPermissions, requestPermissions } = usePermissions();
+
+  useEffect(() => {
+    const initializeCamera = async () => {
+      try {
+        if (!hasPermissions) {
+          await requestPermissions();
+        }
+        
+        const stream = await navigator.mediaDevices.getUserMedia({
+          video: {
+            width: { ideal: 1280 },
+            height: { ideal: 720 },
+            facingMode: 'user'
+          }
+        });
+        
+        if (videoRef.current) {
+          videoRef.current.srcObject = stream;
+        }
+      } catch (error) {
+        console.error('Error accessing camera:', error);
+      }
+    };
+
+    initializeCamera();
+
+    return () => {
+      if (videoRef.current?.srcObject) {
+        const stream = videoRef.current.srcObject as MediaStream;
+        stream.getTracks().forEach(track => track.stop());
+      }
+    };
+  }, [hasPermissions, requestPermissions]);
 
   const toggleRecording = async () => {
     if (isRecording) {
@@ -40,7 +76,14 @@ export const LibrasTranslation: React.FC = () => {
               playsInline
               muted
             />
+            {isRecording && (
+              <div className="absolute top-4 right-4 bg-red-500 text-white px-3 py-1 rounded-full text-sm">
+                Recording
+              </div>
+            )}
           </div>
+          
+          <SignRecorder videoRef={videoRef} />
           
           <div className="space-y-4">
             <button
