@@ -1,29 +1,43 @@
-import { useState, useCallback } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export const useCamera = () => {
+  const videoRef = useRef<HTMLVideoElement | null>(null);
+  const [stream, setStream] = useState<MediaStream | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const startCamera = useCallback(async () => {
+  const startCamera = async () => {
     try {
       const mediaStream = await navigator.mediaDevices.getUserMedia({
-        video: {
-          facingMode: 'user',
-          width: { ideal: 1280 },
-          height: { ideal: 720 }
-        },
-        audio: false
+        video: { facingMode: 'user' }
       });
-      
-      return mediaStream;
+      setStream(mediaStream);
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+      }
     } catch (err) {
       setError('Failed to start camera');
       console.error(err);
-      return null;
     }
+  };
+
+  const stopCamera = () => {
+    if (stream) {
+      stream.getTracks().forEach(track => track.stop());
+      setStream(null);
+    }
+  };
+
+  useEffect(() => {
+    return () => {
+      stopCamera();
+    };
   }, []);
 
   return {
+    videoRef,
+    stream,
     error,
-    startCamera
+    startCamera,
+    stopCamera
   };
 };
