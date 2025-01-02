@@ -5,7 +5,7 @@ import { Welcome } from './components/Welcome';
 import { Register } from './components/Register';
 import { Login } from './components/Login';
 import { ModeSelect } from './components/ModeSelect';
-import { EyeMovementControl } from './components/movement/EyeMovementControl';
+import { CommunicationHub } from './pages/CommunicationHub';
 import { LibrasTranslation } from './components/libras/LibrasTranslation';
 import { useAuthStore } from './store/authStore';
 
@@ -34,7 +34,7 @@ function App() {
             path="movement"
             element={
               <ProtectedRoute>
-                <EyeMovementControl />
+                <CommunicationHub />
               </ProtectedRoute>
             }
           />

@@ -18,9 +18,9 @@ export const CalibrationScreen: React.FC<CalibrationScreenProps> = ({ onComplete
   }, [calibrationPoints, onComplete]);
 
   return (
-    <div className="fixed inset-0 bg-black/50">
-      <div className="absolute inset-4 bg-white rounded-lg p-8">
-        <h2 className="text-2xl font-bold mb-4 text-center">Calibration</h2>
+    <div className="w-full aspect-video bg-gray-100 rounded-lg relative">
+      <div className="absolute inset-0 p-8">
+        <h3 className="text-xl font-semibold mb-4 text-center">Calibration</h3>
         <p className="text-center mb-8">
           Look at each point and blink to calibrate. The point will turn green when calibrated.
         </p>
