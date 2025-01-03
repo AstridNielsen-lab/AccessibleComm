@@ -31,22 +31,23 @@ export const Welcome: React.FC = () => {
         </div>
       </div>
 
-      <div className="space-x-4">
-        <Link
-          to="/register"
-          className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
-        >
-          Get Started
-        </Link>
-        <Link
-          to="/login"
-          className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
-        >
-          Login
-        </Link>
-      </div>
-        
-         <a
+      <div className="flex flex-col items-center gap-4">
+        <div className="space-x-4">
+          <Link
+            to="/register"
+            className="inline-flex items-center px-6 py-3 border border-transparent text-base font-medium rounded-md text-white bg-blue-600 hover:bg-blue-700"
+          >
+            Get Started
+          </Link>
+          <Link
+            to="/login"
+            className="inline-flex items-center px-6 py-3 border border-gray-300 text-base font-medium rounded-md text-gray-700 bg-white hover:bg-gray-50"
+          >
+            Login
+          </Link>
+        </div>
+
+        <a
           href="https://accessible-like-look.netlify.app/"
           target="_blank"
           rel="noopener noreferrer"
