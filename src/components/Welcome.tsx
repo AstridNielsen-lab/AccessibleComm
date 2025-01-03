@@ -45,6 +45,19 @@ export const Welcome: React.FC = () => {
           Login
         </Link>
       </div>
+        
+        <div>
+          <a
+            href="https://accessible-like-look.netlify.app/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex items-center px-6 py-3 bg-purple-600 hover:bg-purple-700 text-white rounded-md font-medium gap-2 transition-colors"
+          >
+            <Bot className="h-5 w-5" />
+            AI Chat Assistant
+          </a>
+        </div>
+      </div>
     </div>
   );
 };
